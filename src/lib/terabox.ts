@@ -277,8 +277,20 @@ async function callList(
       }
 
       if (data.errno) {
+        // errno -9 is not sufficient proof of a password gate: TeraBox can
+        // return it for a public share when this listing endpoint rejects the
+        // request. The HTML gate check has already run in openShare(), so keep
+        // trying mirrors and the WAP strategy instead of aborting resolution.
+        if (data.errno === -9) {
+          lastError = ApiError.upstreamUnexpected(
+            "TeraBox rejected this listing request (errno -9); trying alternate resolution methods.",
+            { errno: data.errno },
+          );
+          continue;
+        }
+
         lastError = fromTeraboxErrno(data.errno, data.errmsg);
-        // A password gate or a missing share is final — no mirror will differ.
+        // A confirmed password gate or a missing share is final.
         if (
           lastError.code === ErrorCode.PASSWORD_REQUIRED ||
           lastError.code === ErrorCode.NOT_FOUND
