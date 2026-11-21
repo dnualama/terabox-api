@@ -79,10 +79,10 @@ export function looksPasswordProtected(html: string): boolean {
   // Search markup, not arbitrary script text: public pages can mention these
   // identifiers in bundled JavaScript without displaying a password prompt.
   const passwordInput =
-    /<input\\b[^>]*\\btype\\s*=\\s*["']password["'][^>]*>/i.test(html) ||
-    /<input\\b[^>]*(?:\\bname|\\bid|\\bclass)\\s*=\\s*["'][^"']*(?:access.?code|pwd|password|verify.?form)[^"']*["'][^>]*>/i.test(html);
+    /<input\b[^>]*\btype\s*=\s*["']password["'][^>]*>/i.test(html) ||
+    /<input\b[^>]*(?:\bname|\bid|\bclass)\s*=\s*["'][^"']*(?:access.?code|pwd|password|verify.?form)[^"']*["'][^>]*>/i.test(html);
   const extractionPrompt =
-    /(?:请输入|please\\s+enter|enter)\\s*(?:the\\s*)?(?:share\\s*)?(?:extraction\\s*)?(?:code|password)/i.test(html);
+    /(?:请输入|please\s+enter|enter)\s*(?:the\s*)?(?:share\s*)?(?:extraction\s*)?(?:code|password)/i.test(html);
   return passwordInput || extractionPrompt;
 }
 
