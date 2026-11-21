@@ -290,13 +290,18 @@ async function callList(
         }
 
         lastError = fromTeraboxErrno(data.errno, data.errmsg);
-        // A confirmed password gate or a missing share is final.
-        if (
-          lastError.code === ErrorCode.PASSWORD_REQUIRED ||
-          lastError.code === ErrorCode.NOT_FOUND
-        ) {
-          throw lastError;
+        // A not-found errno from /share/list is not proof that the share is
+        // gone: this endpoint can reject a valid public link. Keep trying
+        // mirrors and let anonymous/WAP resolution confirm whether it exists.
+        if (lastError.code === ErrorCode.NOT_FOUND) {
+          lastError = ApiError.upstreamUnexpected(
+            "TeraBox listing endpoint reported the share as missing; trying alternate resolution methods.",
+            { errno: data.errno },
+          );
+          continue;
         }
+        // A confirmed password gate is final for this listing attempt.
+        if (lastError.code === ErrorCode.PASSWORD_REQUIRED) throw lastError;
         continue;
       }
 
