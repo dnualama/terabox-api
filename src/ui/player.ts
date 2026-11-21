@@ -31,7 +31,7 @@ ${authRequired ? '<label for="key">Clave API</label><input id="key" type="passwo
 <section class="card"><video id="video" controls playsinline preload="metadata"></video><div id="files"></div></section>
 <script>
 const $=id=>document.getElementById(id);let hls=null,current=null,files=[];
-function auth(){const k=$('key')?.value.trim();return k?{Authorization:'Bearer '+k}:{}}
+function addKey(params){const k=$('key')?.value.trim();if(k)params.set('key',k);return params}
 function keyed(raw){const k=$('key')?.value.trim();if(!k)return raw;const u=new URL(raw);u.searchParams.set('key',k);return u.toString()}
 function status(t){$('status').textContent=t}
 function play(f){current=f;if(hls){hls.destroy();hls=null}const v=$('video');v.pause();v.removeAttribute('src');v.load();
@@ -41,8 +41,8 @@ if(f.hls_url&&!native){const url=keyed(f.hls_url);if(v.canPlayType('application/
 v.play().catch(()=>status('Vídeo cargado. Pulsa ▶ para reproducir.'));
 }
 function render(){const box=$('files');box.innerHTML='';files.filter(f=>f.category==='video').forEach(f=>{const b=document.createElement('button');b.className='file';b.textContent=f.file_name+' · '+f.file_size;b.dataset.id=f.fs_id;b.onclick=()=>play(f);box.appendChild(b)});if(!box.children.length)status('No se han encontrado vídeos en este enlace.')}
-async function resolve(){const link=$('link').value.trim();if(!link){status('Pega primero un enlace de TeraBox.');return}const p=new URLSearchParams({link});const pwd=$('pwd').value.trim();if(pwd)p.set('password',pwd);$('resolve').disabled=true;status('Buscando vídeos…');$('files').innerHTML='';
-try{const r=await fetch('/api/resolve?'+p,{headers:auth()});const data=await r.json();if(!r.ok){status('Error: '+(data.error?.message||data.error?.code||r.status));return}files=data.files||[];status('Encontrados '+files.filter(f=>f.category==='video').length+' vídeos.');render();const first=files.find(f=>f.category==='video');if(first)play(first)}catch(e){status('No se pudo conectar: '+e.message)}finally{$('resolve').disabled=false}}
+async function resolve(){const link=$('link').value.trim();if(!link){status('Pega primero un enlace de TeraBox.');return}const p=new URLSearchParams({link});const pwd=$('pwd').value.trim();if(pwd)p.set('password',pwd);addKey(p);$('resolve').disabled=true;status('Buscando vídeos…');$('files').innerHTML='';
+try{const r=await fetch('/api/resolve?'+p);const data=await r.json();if(!r.ok){status('Error: '+(data.error?.message||data.error?.code||r.status));return}files=data.files||[];status('Encontrados '+files.filter(f=>f.category==='video').length+' vídeos.');render();const first=files.find(f=>f.category==='video');if(first)play(first)}catch(e){status('No se pudo conectar: '+e.message)}finally{$('resolve').disabled=false}}
 $('resolve').onclick=resolve;$('link').addEventListener('keydown',e=>{if(e.key==='Enter')resolve()});
 </script></main></body></html>`;
 }
