@@ -77,7 +77,7 @@ export function extractLogId(html: string): string {
 /** True when the page explicitly presents a password/extraction-code gate. */
 export function looksPasswordProtected(html: string): boolean {
   // Do not infer protection from share_type alone: TeraBox can include that
-  // field on ordinary public share pages. Require explicit password-gate UI.
+  // field on ordinary public share pages. Require explicit password-gate UI to avoid false positives.
   return /accessCode|access_code|pwd-?input|extraction[- ]code|verify-?form/i.test(html);
 }
 
