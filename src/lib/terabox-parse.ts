@@ -74,11 +74,16 @@ export function extractLogId(html: string): string {
   return found || makeLogId();
 }
 
-/** True when the page explicitly presents a password/extraction-code gate. */
+/** True only when the page contains an actual password/extraction-code control. */
 export function looksPasswordProtected(html: string): boolean {
-  // Do not infer protection from share_type alone: TeraBox can include that
-  // field on ordinary public share pages. Require explicit password-gate UI to avoid false positives.
-  return /accessCode|access_code|pwd-?input|extraction[- ]code|verify-?form/i.test(html);
+  // Search markup, not arbitrary script text: public pages can mention these
+  // identifiers in bundled JavaScript without displaying a password prompt.
+  const passwordInput =
+    /<input\\b[^>]*\\btype\\s*=\\s*["']password["'][^>]*>/i.test(html) ||
+    /<input\\b[^>]*(?:\\bname|\\bid|\\bclass)\\s*=\\s*["'][^"']*(?:access.?code|pwd|password|verify.?form)[^"']*["'][^>]*>/i.test(html);
+  const extractionPrompt =
+    /(?:请输入|please\\s+enter|enter)\\s*(?:the\\s*)?(?:share\\s*)?(?:extraction\\s*)?(?:code|password)/i.test(html);
+  return passwordInput || extractionPrompt;
 }
 
 /** True when TeraBox is serving its CAPTCHA wall instead of the share. */
