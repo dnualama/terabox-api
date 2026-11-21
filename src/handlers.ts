@@ -25,6 +25,7 @@ import {
 } from "./lib/validate";
 import { openApiSpec } from "./openapi";
 import { landingPage } from "./ui/landing";
+import { playerPage } from "./ui/player";
 import type { Env, TeraboxFile, TeraboxShare } from "./types";
 
 /** Batch size is bounded by the subrequest budget, not by taste. */
@@ -571,4 +572,10 @@ export function handleOpenApi(ctx: RequestContext): Response {
 
 export function handleLanding(ctx: RequestContext): Response {
   return htmlResponse(landingPage(ctx.url.origin, Boolean(ctx.env.API_KEY)));
+}
+
+
+/** Serve the mobile-first CloudPlayer UI at /player. */
+export function handlePlayer(ctx: RequestContext): Response {
+  return htmlResponse(playerPage(Boolean(ctx.env.API_KEY)));
 }
