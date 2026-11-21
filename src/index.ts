@@ -67,6 +67,8 @@ function authorize(request: Request, url: URL, env: Env): void {
       `bearer=${bearer ? "received" : "missing"}`,
       `configured_key=${configured ? "present" : "missing"}`,
       `query_match=${queryKey ? (safeEqual(queryKey, configured) ? "yes" : "no") : "not_checked"}`,
+      `query_length=${queryKey.length}`,
+      `configured_length=${configured.length}`,
     ].join("; ");
     throw new ApiError(ErrorCode.UNAUTHORIZED, `API key rejected. Diagnostic: ${diagnostic}`, 401);
   }
