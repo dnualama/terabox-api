@@ -57,9 +57,19 @@ function authorize(request: Request, url: URL, env: Env): void {
 
   const header = request.headers.get("Authorization") ?? "";
   const bearer = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  const provided = bearer || url.searchParams.get("key") || "";
+  const queryKey = url.searchParams.get("key") ?? "";
+  const provided = bearer || queryKey;
 
-  if (!provided || !safeEqual(provided, configured)) throw ApiError.unauthorized();
+  if (!provided || !safeEqual(provided, configured)) {
+    // Temporary, non-secret diagnostics to identify where CloudPlayer auth fails.
+    const diagnostic = [
+      `query_key=${queryKey ? "received" : "missing"}`,
+      `bearer=${bearer ? "received" : "missing"}`,
+      `configured_key=${configured ? "present" : "missing"}`,
+      `query_match=${queryKey ? (safeEqual(queryKey, configured) ? "yes" : "no") : "not_checked"}`,
+    ].join("; ");
+    throw new ApiError(ErrorCode.UNAUTHORIZED, `API key rejected. Diagnostic: ${diagnostic}`, 401);
+  }
 }
 
 function route(ctx: RequestContext): Promise<Response> | Response | null {
