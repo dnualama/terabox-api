@@ -3,6 +3,7 @@ import {
   handleHealth,
   handleHls,
   handleLanding,
+  handlePlayer,
   handleOpenApi,
   handleResolve,
   handleSegment,
@@ -17,7 +18,7 @@ import { checkRateLimit, rateLimitHeaders } from "./lib/ratelimit";
 import type { Env } from "./types";
 
 /** Endpoints that stay open even when API_KEY is configured. */
-const PUBLIC_PATHS = new Set(["/", "/health", "/openapi.json", "/favicon.ico"]);
+const PUBLIC_PATHS = new Set(["/", "/health", "/openapi.json", "/favicon.ico", "/player"]);
 
 /** Endpoints that hit TeraBox, and are therefore rate limited. */
 const METERED_PATHS = new Set(["/api/resolve", "/api/batch", "/stream", "/hls", "/segment"]);
@@ -77,6 +78,8 @@ function route(ctx: RequestContext): Promise<Response> | Response | null {
     }
     return null;
   }
+
+  if (pathname === "/player" && method === "GET") return handlePlayer(ctx);
 
   if (pathname === "/api/resolve" && (method === "GET" || method === "POST")) {
     return handleResolve(ctx);
