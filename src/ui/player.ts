@@ -18,7 +18,12 @@ label{display:block;color:var(--muted);font-size:13px;margin:10px 0 5px}input{wi
 button{border:0;border-radius:10px;background:var(--accent);color:#071711;font-weight:700;padding:13px 16px;font-size:15px;cursor:pointer;margin-top:10px}
 button:disabled{opacity:.5}#status{white-space:pre-wrap;color:var(--muted);margin-top:10px;font-size:14px}
 video{width:100%;background:#000;max-height:65vh;border-radius:10px;margin-top:10px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.controls button{flex:1 1 30%;margin:0;background:#303744;color:var(--text);border:1px solid #414b5b}
+.controls button.active{background:var(--accent);color:#071711;border-color:var(--accent)}
+.now-playing{color:var(--muted);font-size:13px;margin:8px 0;overflow-wrap:anywhere}
 .file{display:block;width:100%;text-align:left;background:#252b35;color:var(--text);margin:7px 0;padding:12px;overflow-wrap:anywhere}.file.active{outline:2px solid var(--accent)}
+#files{max-height:42vh;overflow:auto}
 </style>
 </head><body><main>
 <h1>CloudPlayer</h1><p class="sub">Reproduce vídeos compartidos de TeraBox</p>
@@ -28,21 +33,124 @@ ${authRequired ? '<label for="key">Clave API</label><input id="key" type="passwo
 <label for="pwd">Código de extracción (si lo necesita)</label><input id="pwd" type="text" placeholder="Opcional">
 <button id="resolve">Cargar vídeos</button><div id="status"></div>
 </section>
-<section class="card"><video id="video" controls playsinline preload="metadata"></video><div id="files"></div></section>
+<section class="card">
+<div class="now-playing" id="nowPlaying">Ningún vídeo seleccionado</div>
+<video id="video" controls playsinline preload="metadata"></video>
+<div class="controls">
+<button id="previous" type="button">⏮ Anterior</button>
+<button id="next" type="button">Siguiente ⏭</button>
+<button id="shuffle" type="button" aria-pressed="false">⇄ Aleatorio: OFF</button>
+<button id="lucky" type="button">🍀 Voy a tener suerte</button>
+<button id="repeat" type="button" aria-pressed="false">↻ Repetir: OFF</button>
+</div>
+<div id="files"></div></section>
 <script>
-const $=id=>document.getElementById(id);let hls=null,current=null,files=[];
+const $=id=>document.getElementById(id);
+let hls=null,current=null,files=[],playlist=[],queue=[],shuffle=false,repeatMode='off',history=[],historyCursor=-1;
+const videoFiles=()=>files.filter(f=>f.category==='video');
 function addKey(params){const k=$('key')?.value.trim();if(k)params.set('key',k);return params}
 function keyed(raw){const k=$('key')?.value.trim();if(!k)return raw;const u=new URL(raw);u.searchParams.set('key',k);return u.toString()}
 function status(t){$('status').textContent=t}
-function play(f){current=f;if(hls){hls.destroy();hls=null}const v=$('video');v.pause();v.removeAttribute('src');v.load();
-document.querySelectorAll('.file').forEach(b=>b.classList.toggle('active',b.dataset.id===f.fs_id));
-const native=['video/mp4','video/webm','video/quicktime'].includes(f.mime_type);
-if(f.hls_url&&!native){const url=keyed(f.hls_url);if(v.canPlayType('application/vnd.apple.mpegurl'))v.src=url;else if(window.Hls&&Hls.isSupported()){hls=new Hls();hls.loadSource(url);hls.attachMedia(v)}else{v.src=keyed(f.stream_url);status('Este navegador no soporta HLS. Probando stream directo…')}}else v.src=keyed(f.stream_url);
-v.play().catch(()=>status('Vídeo cargado. Pulsa ▶ para reproducir.'));
+function shuffleArray(items){const a=[...items];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function refillQueue(){queue=shuffleArray(playlist.filter(f=>!current||f.fs_id!==current.fs_id))}
+function updateControls(){
+  $('shuffle').classList.toggle('active',shuffle);
+  $('shuffle').textContent='⇄ Aleatorio: '+(shuffle?'ON':'OFF');
+  $('shuffle').setAttribute('aria-pressed',String(shuffle));
+  $('repeat').classList.toggle('active',repeatMode!=='off');
+  $('repeat').textContent='↻ Repetir: '+({off:'OFF',one:'VÍDEO',all:'LISTA'}[repeatMode]);
+  $('repeat').setAttribute('aria-pressed',String(repeatMode!=='off'));
 }
-function render(){const box=$('files');box.innerHTML='';files.filter(f=>f.category==='video').forEach(f=>{const b=document.createElement('button');b.className='file';b.textContent=f.file_name+' · '+f.file_size;b.dataset.id=f.fs_id;b.onclick=()=>play(f);box.appendChild(b)});if(!box.children.length)status('No se han encontrado vídeos en este enlace.')}
-async function resolve(){const link=$('link').value.trim();if(!link){status('Pega primero un enlace de TeraBox.');return}const p=new URLSearchParams({link});const pwd=$('pwd').value.trim();if(pwd)p.set('password',pwd);addKey(p);$('resolve').disabled=true;status('Buscando vídeos…');$('files').innerHTML='';
-try{const r=await fetch('/api/resolve?'+p);const data=await r.json();if(!r.ok){status('Error: '+(data.error?.message||data.error?.code||r.status));return}files=data.files||[];status('Encontrados '+files.filter(f=>f.category==='video').length+' vídeos.');render();const first=files.find(f=>f.category==='video');if(first)play(first)}catch(e){status('No se pudo conectar: '+e.message)}finally{$('resolve').disabled=false}}
-$('resolve').onclick=resolve;$('link').addEventListener('keydown',e=>{if(e.key==='Enter')resolve()});
+function markCurrent(){
+  document.querySelectorAll('.file').forEach(b=>b.classList.toggle('active',b.dataset.id===current?.fs_id));
+  $('nowPlaying').textContent=current?current.file_name:'Ningún vídeo seleccionado';
+}
+function play(f,autoplay=true,record=true){
+  if(!f)return;
+  if(record){
+    if(historyCursor<history.length-1)history=history.slice(0,historyCursor+1);
+    if(history[history.length-1]?.fs_id!==f.fs_id)history.push(f);
+    historyCursor=history.length-1;
+  }
+  current=f;
+  if(hls){hls.destroy();hls=null}
+  const v=$('video');v.pause();v.removeAttribute('src');v.load();
+  markCurrent();
+  const native=['video/mp4','video/webm','video/quicktime'].includes(f.mime_type);
+  if(f.hls_url&&!native){
+    const url=keyed(f.hls_url);
+    if(v.canPlayType('application/vnd.apple.mpegurl'))v.src=url;
+    else if(window.Hls&&Hls.isSupported()){hls=new Hls();hls.loadSource(url);hls.attachMedia(v)}
+    else{v.src=keyed(f.stream_url);status('Este navegador no soporta HLS. Probando stream directo…')}
+  }else v.src=keyed(f.stream_url);
+  if(autoplay)v.play().catch(()=>status('Vídeo cargado. Pulsa ▶ para reproducir.'));
+}
+function nextVideo(manual=false){
+  if(!playlist.length)return;
+  if(repeatMode==='one'&&!manual&&current){play(current);return}
+  let next=null;
+  if(shuffle){
+    if(!queue.length)refillQueue();
+    next=queue.shift()||null;
+  }else{
+    const index=playlist.findIndex(f=>f.fs_id===current?.fs_id);
+    if(index>=0&&index<playlist.length-1)next=playlist[index+1];
+    else if(repeatMode==='all')next=playlist[0];
+  }
+  if(next)play(next);
+  else if(!manual)status('Has llegado al final de la lista.');
+}
+function previousVideo(){
+  if(historyCursor>0){historyCursor--;play(history[historyCursor],true,false);return}
+  const index=playlist.findIndex(f=>f.fs_id===current?.fs_id);
+  if(!shuffle&&index>0)play(playlist[index-1]);
+  else if(!shuffle&&repeatMode==='all'&&playlist.length)play(playlist[playlist.length-1]);
+}
+function toggleShuffle(){
+  shuffle=!shuffle;
+  if(shuffle)refillQueue();else queue=[];
+  updateControls();
+}
+function lucky(){
+  playlist=videoFiles();
+  if(!playlist.length){status('Primero carga una carpeta con vídeos.');return}
+  shuffle=true;repeatMode='off';history=[];historyCursor=-1;refillQueue();
+  const chosen=queue.shift()||playlist[Math.floor(Math.random()*playlist.length)];
+  updateControls();play(chosen);
+  status('¡A la suerte! Reproducción aleatoria activada, sin repetir hasta completar la lista.');
+}
+function render(){
+  const box=$('files');box.innerHTML='';playlist=videoFiles();
+  playlist.forEach(f=>{
+    const b=document.createElement('button');b.className='file';b.type='button';
+    b.textContent=f.file_name+' · '+f.file_size;b.dataset.id=f.fs_id;
+    b.onclick=()=>{if(shuffle)queue=queue.filter(item=>item.fs_id!==f.fs_id);play(f)};
+    box.appendChild(b);
+  });
+  if(!box.children.length)status('No se han encontrado vídeos en este enlace.');
+  markCurrent();updateControls();
+}
+function cycleRepeat(){repeatMode=({off:'all',all:'one',one:'off'})[repeatMode];updateControls()}
+async function resolve(){
+  const link=$('link').value.trim();
+  if(!link){status('Pega primero un enlace de TeraBox.');return}
+  const p=new URLSearchParams({link});const pwd=$('pwd').value.trim();
+  if(pwd)p.set('password',pwd);addKey(p);
+  $('resolve').disabled=true;status('Buscando vídeos…');$('files').innerHTML='';
+  try{
+    const r=await fetch('/api/resolve?'+p);const data=await r.json();
+    if(!r.ok){status('Error: '+(data.error?.message||data.error?.code||r.status));return}
+    files=data.files||[];current=null;queue=[];shuffle=false;repeatMode='off';history=[];historyCursor=-1;
+    status('Encontrados '+videoFiles().length+' vídeos.');render();
+    if(playlist.length)play(playlist[0]);
+  }catch(e){status('No se pudo conectar: '+e.message)}
+  finally{$('resolve').disabled=false}
+}
+$('resolve').onclick=resolve;
+$('link').addEventListener('keydown',e=>{if(e.key==='Enter')resolve()});
+$('previous').onclick=previousVideo;$('next').onclick=()=>nextVideo(true);
+$('shuffle').onclick=toggleShuffle;$('lucky').onclick=lucky;$('repeat').onclick=cycleRepeat;
+$('video').addEventListener('ended',()=>nextVideo(false));
+updateControls();
 </script></main></body></html>`;
 }
