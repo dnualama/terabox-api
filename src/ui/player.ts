@@ -57,7 +57,6 @@ video{grid-area:video;width:100%;max-height:none;aspect-ratio:16/9;object-fit:co
 </head><body><main>
 <h1>CloudPlayer</h1><p class="sub">Reproduce vídeos compartidos de TeraBox</p>
 <section class="card">
-${authRequired ? '<label for="key">Clave API</label><input id="key" type="password" autocomplete="off" placeholder="Tu API key de Cloudflare">' : ''}
 <label for="link">Enlace de TeraBox</label><input id="link" type="url" placeholder="Pega aquí el enlace de la carpeta o vídeo">
 <label for="pwd">Código de extracción (si lo necesita)</label><input id="pwd" type="text" placeholder="Opcional">
 <button id="resolve">Cargar vídeos</button><div id="status"></div>
@@ -85,8 +84,8 @@ if($('key')){
 }
 let hls=null,current=null,files=[],playlist=[],queue=[],shuffle=false,repeatMode='off',history=[],historyCursor=-1;
 const videoFiles=()=>files.filter(f=>f.category==='video');
-function addKey(params){const k=$('key')?.value.trim();if(k)params.set('key',k);return params}
-function keyed(raw){const k=$('key')?.value.trim();if(!k)return raw;const u=new URL(raw);u.searchParams.set('key',k);return u.toString()}
+function addKey(params){return params}
+function keyed(raw){return raw}
 function status(t){$('status').textContent=t}
 function shuffleArray(items){const a=[...items];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function refillQueue(){queue=shuffleArray(playlist.filter(f=>!current||f.fs_id!==current.fs_id))}
