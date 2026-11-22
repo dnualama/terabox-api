@@ -29,11 +29,15 @@ body{padding:24px}
 main{max-width:1440px;padding:10px 0 40px}
 h1{font-size:32px}
 .sub{margin-bottom:24px}
-.card:first-of-type{padding:22px;display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:0 18px;align-items:end}
-.card:first-of-type label{margin-top:0}
-.card:first-of-type #link{grid-column:1}
-.card:first-of-type #pwd{grid-column:2}
-.card:first-of-type #resolve{grid-column:1}
+.card:first-of-type{padding:22px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 18px;align-items:end}
+.card:first-of-type label{margin:0;align-self:end}
+.card:first-of-type label[for="key"]{grid-column:1;grid-row:1}
+.card:first-of-type #key{grid-column:1;grid-row:2}
+.card:first-of-type label[for="link"]{grid-column:2;grid-row:1}
+.card:first-of-type #link{grid-column:2;grid-row:2}
+.card:first-of-type label[for="pwd"]{grid-column:2;grid-row:3}
+.card:first-of-type #pwd{grid-column:2;grid-row:4}
+.card:first-of-type #resolve{grid-column:1;grid-row:3}
 .card:first-of-type #status{grid-column:1/-1}
 .card:nth-of-type(2){display:grid;grid-template-columns:minmax(0,2.2fr) minmax(300px,1fr);grid-template-areas:"now files" "video files" "controls files";gap:14px;padding:18px;align-items:start}
 #nowPlaying{grid-area:now;margin:0;font-size:15px;color:var(--text);font-weight:600}
