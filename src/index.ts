@@ -24,46 +24,9 @@ const PUBLIC_PATHS = new Set(["/", "/health", "/openapi.json", "/favicon.ico", "
 const METERED_PATHS = new Set(["/api/resolve", "/api/batch", "/stream", "/hls", "/segment"]);
 
 /**
- * Constant-time comparison, so a caller can't recover the API key by timing
- * how long a wrong guess takes to be rejected.
+ * Personal-use mode: API_KEY is no longer required by clients.
+ * TeraBox endpoints remain rate-limited by client IP below.
  */
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
-/**
- * `GET /` with no link is the docs page. Any other request to `/` is the v1
- * compatibility resolver, which spends the TeraBox account like any other
- * resolve — so it is neither public nor exempt from rate limiting.
- */
-function isLandingRequest(request: Request, url: URL): boolean {
-  return (
-    url.pathname === "/" &&
-    request.method === "GET" &&
-    !url.searchParams.has("link") &&
-    !url.searchParams.has("url")
-  );
-}
-
-function authorize(request: Request, url: URL, env: Env): void {
-  const configured = env.API_KEY?.trim();
-  if (!configured) return;
-  if (url.pathname === "/" ? isLandingRequest(request, url) : PUBLIC_PATHS.has(url.pathname)) {
-    return;
-  }
-
-  const header = request.headers.get("Authorization") ?? "";
-  const bearer = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-  const queryKey = url.searchParams.get("key") ?? "";
-  const provided = bearer || queryKey;
-
-  if (!provided || !safeEqual(provided, configured)) {
-    throw new ApiError(ErrorCode.UNAUTHORIZED, "Missing or invalid API key.", 401);
-  }
-}
 
 function route(ctx: RequestContext): Promise<Response> | Response | null {
   const { request, url } = ctx;
@@ -112,8 +75,6 @@ export default {
     let extraHeaders: Record<string, string> = {};
 
     try {
-      authorize(request, url, env);
-
       const metered =
         METERED_PATHS.has(url.pathname) ||
         (url.pathname === "/" && !isLandingRequest(request, url));
