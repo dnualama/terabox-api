@@ -75,6 +75,14 @@ ${authRequired ? '<label for="key">Clave API</label><input id="key" type="passwo
 <div id="files"></div></section>
 <script>
 const $=id=>document.getElementById(id);
+// Remember the personal API key in this browser only; never persist TeraBox passwords.
+const API_KEY_STORAGE='cloudplayer_api_key';
+if($('key')){
+  try{$('key').value=localStorage.getItem(API_KEY_STORAGE)||'';}catch{}
+  $('key').addEventListener('input',()=>{
+    try{const value=$('key').value.trim();if(value)localStorage.setItem(API_KEY_STORAGE,value);else localStorage.removeItem(API_KEY_STORAGE);}catch{}
+  });
+}
 let hls=null,current=null,files=[],playlist=[],queue=[],shuffle=false,repeatMode='off',history=[],historyCursor=-1;
 const videoFiles=()=>files.filter(f=>f.category==='video');
 function addKey(params){const k=$('key')?.value.trim();if(k)params.set('key',k);return params}
