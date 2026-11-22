@@ -24,6 +24,31 @@ video{width:100%;background:#000;max-height:65vh;border-radius:10px;margin-top:1
 .now-playing{color:var(--muted);font-size:13px;margin:8px 0;overflow-wrap:anywhere}
 .file{display:block;width:100%;text-align:left;background:#252b35;color:var(--text);margin:7px 0;padding:12px;overflow-wrap:anywhere}.file.active{outline:2px solid var(--accent)}
 #files{max-height:42vh;overflow:auto}
+@media(min-width:900px){
+body{padding:24px}
+main{max-width:1440px;padding:10px 0 40px}
+h1{font-size:32px}
+.sub{margin-bottom:24px}
+.card:first-of-type{padding:22px;display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:0 18px;align-items:end}
+.card:first-of-type label{margin-top:0}
+.card:first-of-type #link{grid-column:1}
+.card:first-of-type #pwd{grid-column:2}
+.card:first-of-type #resolve{grid-column:1}
+.card:first-of-type #status{grid-column:1/-1}
+.card:nth-of-type(2){display:grid;grid-template-columns:minmax(0,2.2fr) minmax(300px,1fr);grid-template-areas:"now files" "video files" "controls files";gap:14px;padding:18px;align-items:start}
+#nowPlaying{grid-area:now;margin:0;font-size:15px;color:var(--text);font-weight:600}
+video{grid-area:video;width:100%;max-height:none;aspect-ratio:16/9;object-fit:contain;margin:0}
+.controls{grid-area:controls;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.controls button{padding:12px 8px}
+#files{grid-area:files;max-height:calc(100vh - 270px);min-height:450px;overflow:auto;border-left:1px solid var(--line);padding-left:14px}
+.file{margin:0 0 8px;padding:13px;background:#252b35;border:1px solid var(--line);font-size:14px}
+.file.active{background:#203b36;border-color:var(--accent)}
+}
+@media(min-width:1200px){
+.card:nth-of-type(2){grid-template-columns:minmax(0,2.5fr) minmax(340px,1fr)}
+.controls{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media(max-width:899px){.card:first-of-type{display:block}}
 </style>
 </head><body><main>
 <h1>CloudPlayer</h1><p class="sub">Reproduce vídeos compartidos de TeraBox</p>
