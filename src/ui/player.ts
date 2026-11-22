@@ -24,6 +24,7 @@ video{width:100%;background:#000;max-height:65vh;border-radius:10px;margin-top:1
 .now-playing{color:var(--muted);font-size:13px;margin:8px 0;overflow-wrap:anywhere}
 .file{display:block;width:100%;text-align:left;background:#252b35;color:var(--text);margin:7px 0;padding:12px;overflow-wrap:anywhere}.file.active{outline:2px solid var(--accent)}
 #files{max-height:42vh;overflow:auto}
+.player-layout{display:block}.playback{min-width:0}.file-panel{margin-top:14px}
 @media(min-width:900px){
 body{padding:24px}
 main{max-width:1440px;padding:10px 0 40px}
@@ -37,12 +38,14 @@ h1{font-size:32px}
 .card:first-of-type #pwd{grid-column:2;grid-row:2}
 .card:first-of-type #resolve{grid-column:1/-1;grid-row:3;margin:2px 0 0;width:100%}
 .card:first-of-type #status{grid-column:1/-1;grid-row:4;margin-top:0}
-.card:nth-of-type(2){display:grid;grid-template-columns:minmax(0,2.2fr) minmax(300px,1fr);grid-template-areas:"now files" "video files" "controls files";grid-template-rows:auto auto auto;gap:10px 14px;padding:18px;align-items:start}
-#nowPlaying{grid-area:now;margin:0;font-size:15px;color:var(--text);font-weight:600}
-video{grid-area:video;width:100%;max-height:calc(100vh - 340px);aspect-ratio:16/9;object-fit:contain;margin:0}
-.controls{grid-area:controls;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.player-layout{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(300px,1fr);gap:14px;padding:18px;align-items:start}
+.playback{grid-column:1;grid-row:1;min-width:0}
+.file-panel{grid-column:2;grid-row:1;min-width:0;max-height:calc(100vh - 220px);overflow:auto;border-left:1px solid var(--line);padding-left:14px;margin:0}
+#nowPlaying{margin:0 0 10px;font-size:15px;color:var(--text);font-weight:600}
+video{width:100%;max-height:calc(100vh - 340px);aspect-ratio:16/9;object-fit:contain;margin:0}
+.controls{margin:10px 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .controls button{padding:10px 6px;font-size:14px}
-#files{grid-area:files;grid-row:1 / 4;max-height:calc(100vh - 220px);min-height:0;overflow:auto;border-left:1px solid var(--line);padding-left:14px}
+#files{max-height:none;overflow:visible;padding:0}
 .file{margin:0 0 8px;padding:13px;background:#252b35;border:1px solid var(--line);font-size:14px}
 .file.active{background:#203b36;border-color:var(--accent)}
 }
@@ -53,9 +56,9 @@ video{max-height:calc(100vh - 300px)}
 }
 @media(min-width:900px) and (max-height:750px){
 video{max-height:calc(100vh - 320px)}
-#files{max-height:calc(100vh - 180px)}
+.file-panel{max-height:calc(100vh - 180px)}
 }
-@media(max-width:899px){.card:first-of-type{display:block}}
+@media(max-width:899px){.card:first-of-type{display:block}.player-layout{display:block}.file-panel{max-height:none;border-left:0;padding-left:0;margin-top:14px}.playback{width:100%}}
 </style>
 </head><body><main>
 <h1>CloudPlayer</h1><p class="sub">Reproduce vídeos compartidos de TeraBox</p>
@@ -64,7 +67,8 @@ video{max-height:calc(100vh - 320px)}
 <label for="pwd">Código de extracción (si lo necesita)</label><input id="pwd" type="text" placeholder="Opcional">
 <button id="resolve">Cargar vídeos</button><div id="status"></div>
 </section>
-<section class="card">
+<section class="card player-layout">
+<div class="playback">
 <div class="now-playing" id="nowPlaying">Ningún vídeo seleccionado</div>
 <video id="video" controls playsinline preload="metadata"></video>
 <div class="controls">
@@ -74,7 +78,9 @@ video{max-height:calc(100vh - 320px)}
 <button id="lucky" type="button">🍀 Voy a tener suerte</button>
 <button id="repeat" type="button" aria-pressed="false">↻ Repetir: OFF</button>
 </div>
-<div id="files"></div></section>
+</div>
+<aside class="file-panel"><div id="files"></div></aside>
+</section>
 <script>
 const $=id=>document.getElementById(id);
 // Remember the personal API key in this browser only; never persist TeraBox passwords.
