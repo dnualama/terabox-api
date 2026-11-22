@@ -22,7 +22,7 @@ video{width:100%;background:#000;max-height:65vh;border-radius:10px;margin-top:1
 .controls button{flex:1 1 30%;margin:0;background:#303744;color:var(--text);border:1px solid #414b5b}
 .controls button.active{background:var(--accent);color:#071711;border-color:var(--accent)}
 .now-playing{color:var(--muted);font-size:13px;margin:8px 0;overflow-wrap:anywhere}
-.file{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#252b35;color:var(--text);margin:7px 0;padding:11px 12px;overflow:hidden;border:1px solid transparent}.file.active{outline:0;border-color:var(--accent);background:#203b36}.file-icon{flex:0 0 42px;width:42px;height:42px;display:grid;place-items:center;border-radius:9px;background:#353e4b;color:var(--accent);font-size:20px}.file-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.file-name{font-size:14px;font-weight:600;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.file-meta{font-size:12px;color:var(--muted)}.file-play{flex:0 0 auto;color:var(--accent);font-size:16px}
+.file{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#252b35;color:var(--text);margin:7px 0;padding:11px 12px;overflow:hidden;border:1px solid transparent}.file.active{outline:0;border-color:var(--accent);background:#203b36}.file-icon{flex:0 0 56px;width:56px;height:42px;display:grid;place-items:center;border-radius:7px;background:#353e4b;color:var(--accent);font-size:20px;overflow:hidden}.file-thumb{width:56px;height:42px;object-fit:cover;display:block}.file-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.file-name{font-size:14px;font-weight:600;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.file-meta{font-size:12px;color:var(--muted)}.file-play{flex:0 0 auto;color:var(--accent);font-size:16px}
 #files{max-height:42vh;overflow:auto}.file-list-heading{font-size:14px;font-weight:700;color:var(--muted);margin:0 0 10px}
 .player-layout{display:block}.playback{min-width:0}.file-panel{margin-top:14px}
 @media(min-width:900px){
@@ -180,6 +180,11 @@ function render(){
   playlist.forEach(f=>{
     const b=document.createElement('button');b.className='file';b.type='button';b.dataset.id=f.fs_id;
     const icon=document.createElement('span');icon.className='file-icon';icon.textContent='▶';
+    if(typeof f.thumbnail==='string'&&f.thumbnail.trim()){
+      const thumb=document.createElement('img');thumb.className='file-thumb';thumb.alt='';thumb.loading='lazy';thumb.src=f.thumbnail;
+      thumb.onerror=()=>{thumb.remove();icon.textContent='▶'};
+      icon.textContent='';icon.appendChild(thumb);
+    }
     const info=document.createElement('span');info.className='file-info';
     const name=document.createElement('span');name.className='file-name';name.textContent=f.file_name||'Vídeo sin nombre';
     const meta=document.createElement('span');meta.className='file-meta';meta.textContent=formatFileSize(f.file_size)||'Archivo de vídeo';
