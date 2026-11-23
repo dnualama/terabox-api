@@ -23,7 +23,7 @@ video{width:100%;background:#000;max-height:65vh;border-radius:10px;margin-top:1
 .controls button.active{background:var(--accent);color:#071711;border-color:var(--accent)}
 .now-playing{color:var(--muted);font-size:13px;margin:8px 0;overflow-wrap:anywhere}
 .file{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#252b35;color:var(--text);margin:7px 0;padding:11px 12px;overflow:hidden;border:1px solid transparent}.file.active{outline:0;border-color:var(--accent);background:#203b36}.file-icon{flex:0 0 56px;width:56px;height:42px;display:grid;place-items:center;border-radius:7px;background:#353e4b;color:var(--accent);font-size:20px;overflow:hidden}.file-thumb{flex:0 0 56px;width:56px;min-width:56px;max-width:56px;height:42px;min-height:42px;object-fit:cover;display:block}.file-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.file-name{font-size:14px;font-weight:600;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.file-meta{font-size:12px;color:var(--muted)}.file-play{flex:0 0 auto;color:var(--accent);font-size:16px}
-#files{max-height:42vh;overflow:auto}.file-list-heading{font-size:14px;font-weight:700;color:var(--muted);margin:0 0 10px}
+#files{max-height:42vh;overflow:auto}.file-search{width:100%;padding:10px 12px;margin:0 0 10px;border-radius:9px;border:1px solid var(--line);background:#101319;color:var(--text);font-size:14px}.file-list-heading{font-size:14px;font-weight:700;color:var(--muted);margin:0 0 10px}
 .player-layout{display:block}.playback{min-width:0}.file-panel{margin-top:14px}
 @media(min-width:900px){
 body{padding:24px}
@@ -91,7 +91,7 @@ if($('key')){
     try{const value=$('key').value.trim();if(value)localStorage.setItem(API_KEY_STORAGE,value);else localStorage.removeItem(API_KEY_STORAGE);}catch{}
   });
 }
-let hls=null,current=null,files=[],playlist=[],queue=[],shuffle=false,repeatMode='off',history=[],historyCursor=-1;
+let hls=null,current=null,files=[],playlist=[],queue=[],shuffle=false,repeatMode='off',history=[],historyCursor=-1,searchTerm='';
 const videoFiles=()=>files.filter(f=>f.category==='video');
 function addKey(params){return params}
 function keyed(raw){return raw}
@@ -177,8 +177,10 @@ function render(){
   const heading=document.createElement('div');heading.className='file-list-heading';
   heading.textContent='Vídeos · '+playlist.length;
   box.appendChild(heading);
+  const search=document.createElement('input');search.type='search';search.className='file-search';search.placeholder='Buscar vídeo…';search.setAttribute('aria-label','Buscar vídeo en la lista');search.value=searchTerm;
+  search.oninput=()=>{searchTerm=search.value.toLocaleLowerCase();filterFiles()};box.appendChild(search);
   playlist.forEach(f=>{
-    const b=document.createElement('button');b.className='file';b.type='button';b.dataset.id=f.fs_id;
+    const b=document.createElement('button');b.className='file';b.type='button';b.dataset.id=f.fs_id;b.dataset.search=(f.file_name||'').toLocaleLowerCase();
     const icon=document.createElement('span');icon.className='file-icon';icon.textContent='▶';
     if(typeof f.thumbnail==='string'&&f.thumbnail.trim()){
       const thumb=document.createElement('img');thumb.className='file-thumb';thumb.alt='';thumb.loading='eager';thumb.decoding='async';thumb.src=f.thumbnail;
@@ -195,8 +197,9 @@ function render(){
     box.appendChild(b);
   });
   if(!playlist.length)status('No se han encontrado vídeos en este enlace.');
-  markCurrent();updateControls();
+  filterFiles();markCurrent();updateControls();
 }
+function filterFiles(){const box=$('files');if(!box)return;const buttons=box.querySelectorAll('.file');let visible=0;buttons.forEach(b=>{const match=!searchTerm||b.dataset.search.includes(searchTerm);b.style.display=match?'flex':'none';if(match)visible++});const heading=box.querySelector('.file-list-heading');if(heading)heading.textContent='Vídeos · '+playlist.length+(searchTerm?' · '+visible+' encontrados':'');}
 function cycleRepeat(){repeatMode=({off:'all',all:'one',one:'off'})[repeatMode];updateControls()}
 async function resolve(){
   const link=$('link').value.trim();
